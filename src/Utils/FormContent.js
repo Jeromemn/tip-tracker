@@ -1,7 +1,4 @@
-import Wrapper from "../components/Wrapper";
-import Form from "@/components/Form";
-
-const formContents = [
+export const addPositionContent = [
   {
     label: "Company Name",
     type: "text",
@@ -22,12 +19,9 @@ const formContents = [
     type: "number",
     placeholder: "Enter your base rate",
   },
+  {
+    label: "Confirm Password",
+    type: "password",
+    placeholder: "Confirm your password",
+  },
 ];
-
-export default function Home() {
-  return (
-    <Wrapper>
-      <Form buttonLabel="Add Job" formContent={formContents}></Form>
-    </Wrapper>
-  );
-}
