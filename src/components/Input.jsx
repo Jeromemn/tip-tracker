@@ -28,15 +28,15 @@ const Label = styled.label`
   letter-spacing: 1px;
 `;
 
-const Input = ({ label, type, placeholder, value, onChange }) => {
+const Input = ({ label, type, placeholder, value, onChange, ...rest }) => {
   return (
     <InputWrapper>
       <Label>{label}</Label>
       <TextInput
         type={type}
         placeholder={placeholder}
-        value={value}
         onChange={onChange}
+        {...rest}
       />
     </InputWrapper>
   );

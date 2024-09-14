@@ -1,5 +1,8 @@
 import Wrapper from "../components/Wrapper";
-import Form from "@/components/Form";
+// import AddCompany from "@/components/addCompany";
+// import AddShift from "@/components/AddShift";
+// import Dropdown from "@/components/Dropdown";
+import EarningsReport from "@/components/EarningsReport";
 
 const formContents = [
   {
@@ -27,7 +30,10 @@ const formContents = [
 export default function Home() {
   return (
     <Wrapper>
-      <Form buttonLabel="Add Job" formContent={formContents}></Form>
+      {/* <Dropdown label="Select Option"></Dropdown> */}
+      {/* <AddCompany></AddCompany> */}
+      {/* <AddShift></AddShift> */}
+      <EarningsReport></EarningsReport>
     </Wrapper>
   );
 }
