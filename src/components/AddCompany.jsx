@@ -91,7 +91,7 @@ const AddCompany = () => {
 
       {/* Dynamically handle locations */}
       {formData.locations.map((location, index) => (
-        <div key={index}>
+        <div key={index + location}>
           <Input
             label="Location Name"
             type="text"
