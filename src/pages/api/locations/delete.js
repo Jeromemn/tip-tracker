@@ -1,6 +1,5 @@
 import clientPromise from "@/lib/mongoDB";
 import { ObjectId } from "mongodb";
-import mockUser from "@/Utils/mockUser";
 
 export default async function handler(req, res) {
   if (req.method === "DELETE") {

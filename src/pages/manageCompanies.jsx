@@ -4,6 +4,7 @@ import Wrapper from "../components/Wrapper";
 import Button from "../components/Button";
 import { DeleteIcon } from "@/icons";
 import DeleteModal from "../components/modals/DeleteModal";
+import EditLocation from "@/components/modals/EditLocation";
 
 const ManageContainer = styled.div`
   display: flex;
@@ -66,7 +67,9 @@ const ButtonWrapper = styled.div`
 const ManagerCompanies = () => {
   const [companies, setCompanies] = useState([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState("");
+  const [selectedPayRate, setSelectedPayRate] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   useEffect(() => {
@@ -116,13 +119,71 @@ const ManagerCompanies = () => {
             : company
         );
         setCompanies(updatedCompanies);
-        handleCloseModal(false);
+        handleCloseModal();
       } else {
         console.error(data.error);
       }
     } catch (error) {
       console.error("Error:", error);
     }
+  };
+
+  const handleOpenEdit = (location) => {
+    setEditOpen(true);
+    setSelectedItem(location.location);
+    setSelectedCompanyId(location.companyId);
+    setSelectedPayRate(location.payRate);
+  };
+
+  const handleConfirmUpdate = async (updatedData) => {
+    try {
+      const { location, payRate } = updatedData;
+      const response = await fetch("/api/locations/update", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          companyId: selectedCompanyId,
+          oldLocation: selectedItem,
+          newLocation: location,
+          payRate: payRate,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update the companies array with the updated location and pay rate
+        const updatedCompanies = companies.map((company) =>
+          company._id === selectedCompanyId
+            ? {
+                ...company,
+                locations: company.locations.map(
+                  (loc) =>
+                    loc.locationName === selectedItem
+                      ? { ...loc, locationName: location, payRate: payRate } // Update location name and pay rate
+                      : loc // Keep the rest unchanged
+                ),
+              }
+            : company
+        );
+        setCompanies(updatedCompanies);
+
+        handleCloseEdit();
+      } else {
+        console.error(data.error);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const handleCloseEdit = () => {
+    setEditOpen(false);
+    setSelectedItem("");
+    setSelectedCompanyId("");
+    setSelectedPayRate("");
   };
 
   const handleCloseModal = () => {
@@ -139,6 +200,13 @@ const ManagerCompanies = () => {
         onClose={handleCloseModal}
         onConfirmDelete={handleConfirmDelete}
       />
+      <EditLocation
+        selectedItem={selectedItem}
+        showModal={editOpen}
+        onClose={handleCloseEdit}
+        payRate={selectedPayRate}
+        onConfirmUpdate={handleConfirmUpdate}
+      />
       <ManageContainer>
         <h1>Manage Companies</h1>
         <AllCompanies>
@@ -154,7 +222,18 @@ const ManagerCompanies = () => {
                   <Text>{location.locationName}</Text>
                   <Text>${location.payRate}</Text>
                   <ButtonWrapper>
-                    <Button variant="secondary"> Edit </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        handleOpenEdit({
+                          location: location.locationName,
+                          payRate: location.payRate,
+                          companyId: company._id,
+                        })
+                      }
+                    >
+                      Edit
+                    </Button>
                     <Button
                       variant="icon"
                       onClick={() =>
