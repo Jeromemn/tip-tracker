@@ -24,7 +24,7 @@ const DeleteModal = ({ selectedItem, showModal, onClose, onConfirmDelete }) => {
     <Modal $isopen={showModal}>
       <Wrapper>
         <ContentContainer>
-          <h2>Are you sure you want to delete {selectedItem.location}?</h2>
+          <h2>Are you sure you want to delete {selectedItem}?</h2>
           <ButtonContainer>
             <Button variant="warning" onClick={onConfirmDelete}>
               Delete
