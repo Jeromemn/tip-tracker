@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Wrapper from "../components/Wrapper";
 import Button from "../components/Button";
 import { DeleteIcon } from "@/icons";
+import DeleteModal from "../components/modals/DeleteModal";
 
 const ManageContainer = styled.div`
   display: flex;
@@ -64,7 +65,9 @@ const ButtonWrapper = styled.div`
 
 const ManagerCompanies = () => {
   const [companies, setCompanies] = useState([]);
-  console.log(companies);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -72,15 +75,70 @@ const ManagerCompanies = () => {
         const response = await fetch("api/companies");
         const data = await response.json();
         setCompanies(data);
-        console.log(data);
       } catch (error) {
         console.error(error);
       }
     };
     fetchCompanies();
   }, []);
+
+  const handleDelete = (location) => {
+    setDeleteOpen(true);
+    setSelectedItem(location.location);
+    setSelectedCompanyId(location.companyId);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await fetch("/api/locations/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          companyId: selectedCompanyId,
+          location: selectedItem,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update the companies array to remove the deleted location immutably
+        const updatedCompanies = companies.map((company) =>
+          company._id === selectedCompanyId
+            ? {
+                ...company,
+                locations: company.locations.filter(
+                  (location) => location.locationName !== selectedItem
+                ),
+              }
+            : company
+        );
+        setCompanies(updatedCompanies);
+        handleCloseModal(false);
+      } else {
+        console.error(data.error);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setDeleteOpen(false);
+    setSelectedItem("");
+    setSelectedCompanyId("");
+  };
+
   return (
     <Wrapper>
+      <DeleteModal
+        selectedItem={selectedItem}
+        showModal={deleteOpen}
+        onClose={handleCloseModal}
+        onConfirmDelete={handleConfirmDelete}
+      />
       <ManageContainer>
         <h1>Manage Companies</h1>
         <AllCompanies>
@@ -97,7 +155,16 @@ const ManagerCompanies = () => {
                   <Text>${location.payRate}</Text>
                   <ButtonWrapper>
                     <Button variant="secondary"> Edit </Button>
-                    <Button variant="icon">
+                    <Button
+                      variant="icon"
+                      onClick={() =>
+                        handleDelete({
+                          location: location.locationName,
+                          company: company.name,
+                          companyId: company._id,
+                        })
+                      }
+                    >
                       <DeleteIcon />
                     </Button>
                   </ButtonWrapper>

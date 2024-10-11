@@ -2,7 +2,7 @@ import React from "react";
 import styled from "styled-components";
 
 const PrimaryButton = styled.button`
-  background: ${(props) => props.theme.colors.orange};
+  background: ${(props) => props.theme.colors.lightGray};
   color: ${(props) => props.theme.colors.white};
   padding: 16px 24px;
   border: none;
@@ -27,6 +27,15 @@ const SecondaryButton = styled.button`
   cursor: pointer;
 `;
 
+const WarningButton = styled.button`
+  background: red;
+  color: white;
+  padding: 12px 12px;
+  border-radius: 4px;
+  border: none;
+  font-size: 18px;
+`;
+
 const IconButton = styled.button`
   background: none;
   border: none;
@@ -40,6 +49,7 @@ const variants = {
   primary: PrimaryButton,
   secondary: SecondaryButton,
   icon: IconButton,
+  warning: WarningButton,
 };
 
 const Button = ({ variant = "primary", children, ...rest }) => {
