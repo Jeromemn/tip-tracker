@@ -5,6 +5,7 @@ import Button from "../components/Button";
 import { DeleteIcon } from "@/icons";
 import DeleteModal from "../components/modals/DeleteModal";
 import EditLocation from "@/components/modals/EditLocation";
+import { useSession } from "next-auth/react";
 
 const ManageContainer = styled.div`
   display: flex;
@@ -65,10 +66,13 @@ const ButtonWrapper = styled.div`
 `;
 
 const ManagerCompanies = () => {
+  const { data: session } = useSession();
   const [companies, setCompanies] = useState([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState("");
+  const [locationId, setLocationId] = useState("");
+  console.log(selectedItem);
   const [selectedPayRate, setSelectedPayRate] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
@@ -89,7 +93,12 @@ const ManagerCompanies = () => {
     setDeleteOpen(true);
     setSelectedItem(location.location);
     setSelectedCompanyId(location.companyId);
+    setLocationId(location.locationId);
   };
+
+  console.log("company id", selectedCompanyId);
+  console.log("location id", locationId);
+  console.log("user id ", session?.user.id);
 
   const handleConfirmDelete = async () => {
     try {
@@ -100,7 +109,8 @@ const ManagerCompanies = () => {
         },
         body: JSON.stringify({
           companyId: selectedCompanyId,
-          location: selectedItem,
+          locationId: locationId,
+          user_id: session.user.id,
         }),
       });
 
@@ -133,7 +143,10 @@ const ManagerCompanies = () => {
     setSelectedItem(location.location);
     setSelectedCompanyId(location.companyId);
     setSelectedPayRate(location.payRate);
+    setLocationId(location.locationId);
   };
+
+  console.log(locationId);
 
   const handleConfirmUpdate = async (updatedData) => {
     try {
@@ -148,6 +161,8 @@ const ManagerCompanies = () => {
           oldLocation: selectedItem,
           newLocation: location,
           payRate: payRate,
+          userId: session.user.id,
+          locationId: locationId,
         }),
       });
 
@@ -227,6 +242,7 @@ const ManagerCompanies = () => {
                       onClick={() =>
                         handleOpenEdit({
                           location: location.locationName,
+                          locationId: location.locationId,
                           payRate: location.payRate,
                           companyId: company._id,
                         })
@@ -239,6 +255,7 @@ const ManagerCompanies = () => {
                       onClick={() =>
                         handleDelete({
                           location: location.locationName,
+                          locationId: location.locationId,
                           company: company.name,
                           companyId: company._id,
                         })

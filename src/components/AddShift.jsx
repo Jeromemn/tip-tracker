@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Input from "./Input";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
+import { useSession } from "next-auth/react";
 
 const FormWrapper = styled.form`
   display: flex;
@@ -12,51 +13,71 @@ const FormWrapper = styled.form`
   padding: 24px;
 `;
 
+const Text = styled.p`
+  font-size: 20px;
+  font-weight: 600;
+`;
+
 const AddShift = () => {
+  const { data: session, status } = useSession();
   const [companies, setCompanies] = useState([]);
+  console.log(companies);
   const [selectedCompany, setSelectedCompany] = useState("");
+  console.log("selected company", selectedCompany);
   const [selectedLocation, setSelectedLocation] = useState("");
+  console.log("selected location", selectedLocation);
   const [payRate, setPayRate] = useState(0);
   const [formData, setFormData] = useState({
+    companyId: "",
+    locationId: "",
+    date: "",
     clockIn: "",
     clockOut: "",
-    tips: 0,
+    tips: null,
     hoursWorked: 0,
-    totalHourlyPay: 0,
+    totalBasePay: 0,
+    totalHourlyRate: 0,
     totalPay: 0,
   });
+  console.log(formData);
 
-  // Fetch companies and locations from the database
   useEffect(() => {
-    const fetchData = async () => {
-      const response = await fetch("/api/companies");
-      const data = await response.json();
-      setCompanies(data);
+    const fetchCompanies = async () => {
+      if (status === "authenticated") {
+        try {
+          const response = await fetch("/api/companies/");
+          if (!response.ok) {
+            throw new Error("Failed to fetch companies.");
+          }
+          const data = await response.json();
+          setCompanies(data);
+        } catch (error) {
+          console.error("Error fetching companies:", error);
+          // setError(error.message);
+        }
+      } else if (status === "unauthenticated") {
+        signIn(); // Redirect to sign-in if not authenticated
+      }
     };
-    fetchData();
-  }, []);
+
+    fetchCompanies();
+  }, [status]);
 
   // Handle company selection
   const handleCompanyChange = (companyId) => {
     const company = companies.find((company) => company._id === companyId);
-    setSelectedCompany({
-      id: company._id,
-      name: company.name,
-    });
+    setSelectedCompany(company);
     setSelectedLocation(""); // Reset location when company changes
     setPayRate(0); // Reset pay rate when company changes
   };
 
   // Handle location selection
-  const handleLocationChange = (locationName) => {
-    const selectedCompanyData = companies.find(
-      (company) => company._id === selectedCompany.id
+  const handleLocationChange = (locationId) => {
+    const location = selectedCompany.locations.find(
+      (loc) => loc.locationId === locationId
     );
-    const selectedLocationData = selectedCompanyData.locations.find(
-      (location) => location.locationName === locationName
-    );
-    setSelectedLocation(locationName);
-    setPayRate(selectedLocationData.payRate); // Set pay rate for selected location
+    setSelectedLocation(location);
+    setPayRate(location.payRate);
   };
 
   const handleInputChange = (event) => {
@@ -67,46 +88,52 @@ const AddShift = () => {
     }));
   };
 
+  const calculateTotalPay = () => {};
+
   // Calculate total hours worked
+  // Calculate hours worked and pay when clockIn or clockOut changes
   useEffect(() => {
     if (formData.clockIn && formData.clockOut) {
-      const clockInTime = new Date(formData.clockIn);
-      const clockOutTime = new Date(formData.clockOut);
+      const clockInTime = new Date(`1970-01-01T${formData.clockIn}:00`);
+      const clockOutTime = new Date(`1970-01-01T${formData.clockOut}:00`);
 
-      const hoursWorked = (clockOutTime - clockInTime) / (1000 * 60 * 60); // Convert milliseconds to hours
+      // Handle overnight shifts
+      if (clockOutTime < clockInTime) {
+        clockOutTime.setDate(clockOutTime.getDate() + 1);
+      }
 
-      setFormData((prevData) => ({
-        ...prevData,
+      const hoursWorked = (clockOutTime - clockInTime) / (1000 * 60 * 60); // Convert ms to hours
+      const totalBasePay = hoursWorked * payRate;
+      const totalPay = totalBasePay + parseFloat(formData.tips || 0);
+      const totalHourlyRate = totalPay / hoursWorked;
+
+      setFormData((prev) => ({
+        ...prev,
         hoursWorked: hoursWorked.toFixed(2),
+        totalBasePay: totalBasePay.toFixed(2),
+        totalPay: totalPay.toFixed(2),
+        totalHourlyRate: totalHourlyRate.toFixed(2),
       }));
     }
-  }, [formData.clockIn, formData.clockOut]);
-
-  // Calculate total hourly pay and total pay
-  useEffect(() => {
-    const totalHourlyPay = formData.hoursWorked * payRate;
-    const totalPay = totalHourlyPay + Number(formData.tips);
-
-    setFormData((prevData) => ({
-      ...prevData,
-      totalHourlyPay: totalHourlyPay.toFixed(2),
-      totalPay: totalPay.toFixed(2),
-    }));
-  }, [formData.hoursWorked, payRate, formData.tips]);
+  }, [formData.clockIn, formData.clockOut, payRate, formData.tips]);
 
   // Handle form submission
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const shiftData = {
-      companyId: selectedCompany,
+      user_id: session.user.id,
+      companyId: selectedCompany._id,
       companyName: selectedCompany.name,
-      locationName: selectedLocation,
+      locationId: selectedLocation.locationId,
+      locationName: selectedLocation.locationName,
+      date: formData.date,
       clockIn: formData.clockIn,
       clockOut: formData.clockOut,
       hoursWorked: formData.hoursWorked,
       payRate,
-      totalHourlyPay: formData.totalHourlyPay,
+      totalBasePay: formData.totalBasePay,
+      totalHourlyRate: formData.totalHourlyRate,
       totalPay: formData.totalPay,
       tips: formData.tips,
     };
@@ -121,20 +148,25 @@ const AddShift = () => {
       });
       const result = await response.json();
       console.log("Shift added:", result);
-      setSelectedCompany("");
-      setSelectedLocation("");
-      setPayRate(0);
-      setFormData({
-        clockIn: "",
-        clockOut: "",
-        tips: 0,
-        hoursWorked: 0,
-        totalHourlyPay: 0,
-        totalPay: 0,
-      });
+      resetForm();
     } catch (error) {
       console.error("Error adding shift:", error);
     }
+  };
+
+  const resetForm = () => {
+    setSelectedCompany("");
+    setSelectedLocation("");
+    setPayRate(0);
+    setFormData({
+      date: "",
+      clockIn: "",
+      clockOut: "",
+      tips: null,
+      hoursWorked: 0,
+      totalBasePay: 0,
+      totalPay: 0,
+    });
   };
 
   return (
@@ -144,43 +176,51 @@ const AddShift = () => {
       <Dropdown
         options={companies}
         onChange={handleCompanyChange}
-        value={selectedCompany.id}
+        value={selectedCompany._id || ""}
         labelKey="name"
         valueKey="_id"
       ></Dropdown>
       <Dropdown
-        options={
-          companies.find((company) => company._id === selectedCompany.id)
-            ?.locations || []
-        }
+        options={selectedCompany?.locations || []}
         onChange={handleLocationChange}
-        value={selectedLocation}
+        value={selectedLocation.locationId || ""}
         labelKey="locationName"
-        valueKey="locationName"
+        valueKey="locationId"
       ></Dropdown>
 
       {/* Clock In/Clock Out Times */}
-      <Input
-        label="Clock In"
-        type="datetime-local"
-        name="clockIn"
-        value={formData.clockIn}
+      <input
+        type="date"
+        name="date"
+        value={formData.date}
         onChange={handleInputChange}
-      />
-      <Input
-        label="Clock Out"
-        type="datetime-local"
-        name="clockOut"
-        value={formData.clockOut}
-        onChange={handleInputChange}
-      />
+      ></input>
+
+      <div>
+        <Text>Time In:</Text>
+        <input
+          type="time"
+          name="clockIn"
+          value={formData.clockIn}
+          onChange={handleInputChange}
+        ></input>
+      </div>
+      <div>
+        <Text>Time Out:</Text>
+        <input
+          type="time"
+          name="clockOut"
+          value={formData.clockOut}
+          onChange={handleInputChange}
+        ></input>
+      </div>
 
       {/* Tips Earned */}
       <Input
         label="Tips Earned"
         type="number"
         name="tips"
-        value={formData.tips}
+        value={formData.tips || null}
         onChange={handleInputChange}
       />
 
@@ -188,7 +228,8 @@ const AddShift = () => {
       {formData.hoursWorked > 0 && (
         <div>
           <p>Hours Worked: {formData.hoursWorked}</p>
-          <p>Total Base Pay: ${formData.totalHourlyPay}</p>
+          <p>Total Base Pay: ${formData.totalBasePay}</p>
+          <p>Total Hourly Rate: ${formData.totalHourlyRate}</p>
           <p>Total Pay: ${formData.totalPay}</p>
         </div>
       )}

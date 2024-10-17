@@ -5,6 +5,8 @@ import Button from "@/components/Button";
 import Close from "@/icons/Close";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import LoginButton from "./LoginButton";
+import { useSession } from "next-auth/react";
 
 const HeaderWrapper = Styled.header`
   background: ${(props) => props.theme.colors.black};
@@ -66,6 +68,10 @@ const NavItem = Styled(Link)`
   font-size: 24px;
 `;
 
+const UserTitle = Styled.h2`
+  color: ${(props) => props.theme.colors.white};
+`;
+
 const NavOptions = {
   "/": "Home",
   "/shifts": "Shifts",
@@ -77,7 +83,8 @@ const Header = () => {
   const router = useRouter();
   const currentPath = router.pathname;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const { data: session } = useSession();
+  // console.log(session);
   const handleMobileMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -91,6 +98,7 @@ const Header = () => {
         <MobileNav $isOpen={isMenuOpen}>
           <NavContent>
             <Nav>
+              <UserTitle>{session?.user.name}</UserTitle>
               {Object.entries(NavOptions).map(([path, text]) => (
                 <NavItem
                   key={path}
@@ -101,6 +109,7 @@ const Header = () => {
                   {text}
                 </NavItem>
               ))}
+              <LoginButton />
             </Nav>
           </NavContent>
         </MobileNav>

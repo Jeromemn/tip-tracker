@@ -3,13 +3,18 @@ import { ObjectId } from "mongodb";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const { company, location, payRate } = req.body;
+    const { company, location, payRate, userId } = req.body;
     console.log("companyId:", company);
     console.log("location:", location);
     console.log("payRate:", payRate);
+    console.log("user_id:", userId);
 
     if (!company || !location || !payRate) {
       return res.status(400).json({ error: "All fields are required." });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     try {
@@ -25,12 +30,13 @@ export default async function handler(req, res) {
 
       // Update the company by pushing the new location to the locations array
       const result = await collection.updateOne(
-        { _id: new ObjectId(company.id) },
+        { user_id: new ObjectId(userId), _id: new ObjectId(company.id) },
         {
           $push: {
             locations: {
               locationName: location,
               payRate: Number(payRate), // Ensure payRate is a number
+              locationId: new ObjectId(),
             },
           },
         }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Wrapper from "../components/Wrapper";
 import ShiftView from "@/components/modals/ShiftView";
+import { useSession } from "next-auth/react";
 
 const ShiftsContainer = styled.div`
   display: flex;
@@ -31,18 +32,24 @@ const ShiftDetails = styled.div`
 `;
 
 const Shifts = () => {
+  const { data: session, status } = useSession();
+
   const [shifts, setShifts] = useState([]);
   const [selectedShift, setSelectedShift] = useState("");
   const [showShift, setShowShift] = useState(false);
 
   useEffect(() => {
     const fetchShifts = async () => {
-      try {
-        const res = await fetch("/api/shifts");
-        const data = await res.json();
-        setShifts(data);
-      } catch (error) {
-        console.log(error);
+      if (status !== "authenticated") {
+        try {
+          const res = await fetch("/api/shifts");
+          const data = await res.json();
+          setShifts(data);
+        } catch (error) {
+          console.log(error);
+        }
+      } else if (status === "unauthenticated") {
+        signIn();
       }
     };
     fetchShifts();
@@ -77,6 +84,7 @@ const Shifts = () => {
         selectedShift={selectedShift}
         showShift={showShift}
         onDelete={handleDeleteShift}
+        user={session?.user}
       />
       <ShiftsContainer>
         <h1>Shifts</h1>

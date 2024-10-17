@@ -82,7 +82,7 @@ const formatTimeForInput = (dateString) => {
   return `${hours}:${minutes}`; // e.g., "14:30"
 };
 
-const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
+const ShiftView = ({ onClose, selectedShift, showShift, onDelete, user }) => {
   const [editShift, setEditShift] = useState(false);
   const [deleteShift, setDeleteShift] = useState(false);
   const [selectedItem, setSelectedItem] = useState("");
@@ -182,7 +182,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ shiftId }),
+        body: JSON.stringify({ shiftId, user_id: user.id }),
       });
 
       const data = await response.json();

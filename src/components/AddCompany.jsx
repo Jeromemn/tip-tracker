@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import Input from "./Input";
 import Button from "./Button";
+import { useSession } from "next-auth/react";
 
 const FormWrapper = styled.form`
   display: flex;
@@ -12,8 +13,9 @@ const FormWrapper = styled.form`
 `;
 
 const AddCompany = () => {
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
-    company: "",
+    companyName: "",
     locations: [
       {
         locationName: "",
@@ -53,9 +55,14 @@ const AddCompany = () => {
   // Submit form data
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!session) {
+      alert("You must be signed in to add a company.");
+      return;
+    }
 
     const cleanedFormData = {
-      ...formData,
+      companyName: formData.companyName,
+      userId: session.user.id,
       locations: formData.locations.map((location) => ({
         ...location,
         payRate: Number(location.payRate), // Ensure payRate is a number
@@ -72,7 +79,7 @@ const AddCompany = () => {
       });
 
       const result = await response.json();
-      console.log("Company created with ID:", result.companyId);
+      console.log("Company created with ID:", result.id);
     } catch (error) {
       console.error("Error creating company:", error);
     }
@@ -84,8 +91,8 @@ const AddCompany = () => {
         label="Company Name"
         type="text"
         placeholder="Enter the company name"
-        name="company"
-        value={formData.company}
+        name="companyName"
+        value={formData.companyName}
         onChange={handleCompanyInputChange}
       />
 

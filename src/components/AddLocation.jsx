@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Input from "./Input";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
+import { useSession } from "next-auth/react";
 
 const FormWrapper = styled.form`
   display: flex;
@@ -13,6 +14,7 @@ const FormWrapper = styled.form`
 `;
 
 const AddLocation = () => {
+  const { data: session, status } = useSession();
   const [formData, setFormData] = useState({
     company: "",
     location: "",
@@ -59,14 +61,25 @@ const AddLocation = () => {
     });
   };
 
+  // console.log(session.user.id);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!session) {
+      alert("You must be signed in to add a location.");
+      return;
+    }
 
     const cleanedFormData = {
       company: selectedCompany,
       location: formData.location,
-      payRate: Number(formData.payRate), // Ensure payRate is a number
+      payRate: Number(formData.payRate),
+      userId: session.user.id,
+      // Ensure payRate is a number
     };
+    console.log("user id in add location", session.user.id);
+    console.log("cleanedFormData", cleanedFormData);
 
     try {
       const response = await fetch("/api/companies/update", {
