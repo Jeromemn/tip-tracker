@@ -61,8 +61,6 @@ const AddLocation = () => {
     });
   };
 
-  // console.log(session.user.id);
-
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -78,8 +76,6 @@ const AddLocation = () => {
       userId: session.user.id,
       // Ensure payRate is a number
     };
-    console.log("user id in add location", session.user.id);
-    console.log("cleanedFormData", cleanedFormData);
 
     try {
       const response = await fetch("/api/companies/update", {

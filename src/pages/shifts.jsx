@@ -39,25 +39,37 @@ const Shifts = () => {
   const [showShift, setShowShift] = useState(false);
 
   useEffect(() => {
-    const fetchShifts = async () => {
-      if (status !== "authenticated") {
+    if (status === "authenticated") {
+      const fetchShifts = async () => {
         try {
           const res = await fetch("/api/shifts");
+          if (!res.ok) {
+            throw new Error("Failed to fetch shifts");
+          }
           const data = await res.json();
           setShifts(data);
         } catch (error) {
-          console.log(error);
+          console.error("Error fetching shifts:", error);
         }
-      } else if (status === "unauthenticated") {
-        signIn();
-      }
-    };
-    fetchShifts();
-  }, []);
+      };
 
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+      fetchShifts();
+    } else if (status === "unauthenticated") {
+      signIn(); // Redirect to sign-in page if unauthenticated
+    }
+  }, [status]);
+
+  const formatDateForDisplay = (dateString) => {
+    const date = new Date(dateString); // Create the date object
+
+    // Use the user's local timezone to extract year, month, and day.
+    const options = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    };
+    return date.toLocaleDateString(undefined, options); // e.g., "October 18, 2024"
   };
 
   const handleOpenShift = (shift) => {
@@ -75,24 +87,45 @@ const Shifts = () => {
     setShifts((prevShifts) =>
       prevShifts.filter((shift) => shift._id !== deletedShiftId)
     );
+    handleClose();
+  };
+
+  const handleUpdateShift = (updatedShift) => {
+    // Update the shifts list by replacing the updated shift
+    setShifts((prevShifts) =>
+      prevShifts.map((shift) =>
+        shift._id === updatedShift.shiftId
+          ? {
+              ...shift,
+              locationName: updatedShift.formattedShiftData.locationName,
+              tips: updatedShift.formattedShiftData.tips,
+              totalPay: updatedShift.formattedShiftData.totalPay,
+            }
+          : shift
+      )
+    );
+    handleClose();
   };
 
   return (
     <Wrapper>
-      <ShiftView
-        onClose={handleClose}
-        selectedShift={selectedShift}
-        showShift={showShift}
-        onDelete={handleDeleteShift}
-        user={session?.user}
-      />
+      {selectedShift && (
+        <ShiftView
+          onClose={handleClose}
+          selectedShift={selectedShift}
+          showShift={showShift}
+          onDelete={handleDeleteShift}
+          onUpdate={handleUpdateShift}
+          user={session?.user}
+        />
+      )}
       <ShiftsContainer>
         <h1>Shifts</h1>
         {shifts.map((shift) => (
           <ShiftWrapper key={shift._id} onClick={() => handleOpenShift(shift)}>
             <ShiftDetails>
               <h2>{shift.locationName}</h2>
-              <h2> {formatDate(shift.clockIn)}</h2>
+              <h2> {formatDateForDisplay(shift.date)}</h2>
             </ShiftDetails>
             <IncomeWrapper>
               <h2>Tips: ${shift.tips}</h2>

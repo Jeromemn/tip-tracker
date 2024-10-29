@@ -70,11 +70,12 @@ const ManagerCompanies = () => {
   const [companies, setCompanies] = useState([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState("");
-  const [locationId, setLocationId] = useState("");
-  console.log(selectedItem);
-  const [selectedPayRate, setSelectedPayRate] = useState("");
-  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [selectedItem, setSelectedItem] = useState({
+    location: "",
+    locationId: "",
+    companyId: "",
+    payRate: "",
+  });
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -91,25 +92,26 @@ const ManagerCompanies = () => {
 
   const handleDelete = (location) => {
     setDeleteOpen(true);
-    setSelectedItem(location.location);
-    setSelectedCompanyId(location.companyId);
-    setLocationId(location.locationId);
+    setSelectedItem({
+      location: location.locationName,
+      locationId: location.locationId,
+      companyId: location.companyId,
+      payRate: location.payRate,
+    });
   };
-
-  console.log("company id", selectedCompanyId);
-  console.log("location id", locationId);
-  console.log("user id ", session?.user.id);
 
   const handleConfirmDelete = async () => {
     try {
+      const { companyId, locationId } = selectedItem;
+
       const response = await fetch("/api/locations/delete", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          companyId: selectedCompanyId,
-          locationId: locationId,
+          companyId,
+          locationId,
           user_id: session.user.id,
         }),
       });
@@ -119,11 +121,11 @@ const ManagerCompanies = () => {
       if (response.ok) {
         // Update the companies array to remove the deleted location immutably
         const updatedCompanies = companies.map((company) =>
-          company._id === selectedCompanyId
+          company._id === companyId
             ? {
                 ...company,
                 locations: company.locations.filter(
-                  (location) => location.locationName !== selectedItem
+                  (location) => location.locationId !== locationId
                 ),
               }
             : company
@@ -140,54 +142,57 @@ const ManagerCompanies = () => {
 
   const handleOpenEdit = (location) => {
     setEditOpen(true);
-    setSelectedItem(location.location);
-    setSelectedCompanyId(location.companyId);
-    setSelectedPayRate(location.payRate);
-    setLocationId(location.locationId);
+    setSelectedItem({
+      location: location.locationName,
+      locationId: location.locationId,
+      companyId: location.companyId,
+      payRate: location.payRate,
+    });
   };
-
-  console.log(locationId);
 
   const handleConfirmUpdate = async (updatedData) => {
     try {
-      const { location, payRate } = updatedData;
+      const { location: updatedLocation, payRate } = updatedData;
+      const { companyId, locationId, location } = selectedItem;
+
+      const updatedLocationData = {
+        companyId,
+        oldLocation: location,
+        newLocation: updatedLocation,
+        payRate,
+        userId: session.user.id,
+        locationId,
+      };
+
       const response = await fetch("/api/locations/update", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          companyId: selectedCompanyId,
-          oldLocation: selectedItem,
-          newLocation: location,
-          payRate: payRate,
-          userId: session.user.id,
-          locationId: locationId,
-        }),
+        body: JSON.stringify(updatedLocationData),
       });
-
-      const data = await response.json();
 
       if (response.ok) {
         // Update the companies array with the updated location and pay rate
         const updatedCompanies = companies.map((company) =>
-          company._id === selectedCompanyId
+          company._id === companyId
             ? {
                 ...company,
                 locations: company.locations.map(
                   (loc) =>
-                    loc.locationName === selectedItem
-                      ? { ...loc, locationName: location, payRate: payRate } // Update location name and pay rate
-                      : loc // Keep the rest unchanged
+                    loc.locationId === locationId
+                      ? { ...loc, locationName: updatedData.location, payRate }
+                      : loc // Keep unchanged locations intact
                 ),
               }
             : company
         );
-        setCompanies(updatedCompanies);
 
+        setCompanies(updatedCompanies);
         handleCloseEdit();
       } else {
-        console.error(data.error);
+        const errorData = await response.json();
+        console.error(errorData.error);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -197,20 +202,17 @@ const ManagerCompanies = () => {
   const handleCloseEdit = () => {
     setEditOpen(false);
     setSelectedItem("");
-    setSelectedCompanyId("");
-    setSelectedPayRate("");
   };
 
   const handleCloseModal = () => {
     setDeleteOpen(false);
     setSelectedItem("");
-    setSelectedCompanyId("");
   };
 
   return (
     <Wrapper>
       <DeleteModal
-        selectedItem={selectedItem}
+        selectedItem={selectedItem.location}
         showModal={deleteOpen}
         onClose={handleCloseModal}
         onConfirmDelete={handleConfirmDelete}
@@ -219,7 +221,6 @@ const ManagerCompanies = () => {
         selectedItem={selectedItem}
         showModal={editOpen}
         onClose={handleCloseEdit}
-        payRate={selectedPayRate}
         onConfirmUpdate={handleConfirmUpdate}
       />
       <ManageContainer>
@@ -240,12 +241,7 @@ const ManagerCompanies = () => {
                     <Button
                       variant="secondary"
                       onClick={() =>
-                        handleOpenEdit({
-                          location: location.locationName,
-                          locationId: location.locationId,
-                          payRate: location.payRate,
-                          companyId: company._id,
-                        })
+                        handleOpenEdit({ ...location, companyId: company._id })
                       }
                     >
                       Edit
@@ -254,9 +250,7 @@ const ManagerCompanies = () => {
                       variant="icon"
                       onClick={() =>
                         handleDelete({
-                          location: location.locationName,
-                          locationId: location.locationId,
-                          company: company.name,
+                          ...location,
                           companyId: company._id,
                         })
                       }

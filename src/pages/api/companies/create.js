@@ -42,7 +42,7 @@ export default async function handler(req, res) {
               locations: {
                 $each: locations.map((location) => ({
                   locationName: location.locationName,
-                  payRate: location.payRate,
+                  payRate: parseFloat(location.payRate),
                   locationId: new ObjectId(),
                 })),
               },
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
           user_id: new ObjectId(userId),
           locations: locations.map((location) => ({
             locationName: location.locationName,
-            payRate: location.payRate,
+            payRate: parseFloat(location.payRate),
             locationId: new ObjectId(),
           })),
         };

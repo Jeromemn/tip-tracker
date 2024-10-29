@@ -17,8 +17,6 @@ export default async function handler(req, res) {
         locationId,
       } = req.body;
 
-      console.log("location id in update", locationId);
-
       // Use the correct query to target a location in the array
       const query = {
         user_id: new ObjectId(userId),
@@ -29,9 +27,9 @@ export default async function handler(req, res) {
       const update = {
         $set: {
           ...(oldLocation !== newLocation && {
-            "locations.$.locationName": newLocation, // Update location name if changed
+            "locations.$.locationName": newLocation, // Update location name if it changed
           }),
-          "locations.$.payRate": payRate, // Always update pay rate
+          "locations.$.payRate": parseFloat(payRate), // Always update pay rate
         },
       };
 

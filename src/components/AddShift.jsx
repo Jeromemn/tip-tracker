@@ -21,11 +21,8 @@ const Text = styled.p`
 const AddShift = () => {
   const { data: session, status } = useSession();
   const [companies, setCompanies] = useState([]);
-  console.log(companies);
   const [selectedCompany, setSelectedCompany] = useState("");
-  console.log("selected company", selectedCompany);
   const [selectedLocation, setSelectedLocation] = useState("");
-  console.log("selected location", selectedLocation);
   const [payRate, setPayRate] = useState(0);
   const [formData, setFormData] = useState({
     companyId: "",
@@ -39,7 +36,6 @@ const AddShift = () => {
     totalHourlyRate: 0,
     totalPay: 0,
   });
-  console.log(formData);
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -87,8 +83,6 @@ const AddShift = () => {
       [name]: value,
     }));
   };
-
-  const calculateTotalPay = () => {};
 
   // Calculate total hours worked
   // Calculate hours worked and pay when clockIn or clockOut changes

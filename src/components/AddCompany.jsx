@@ -19,10 +19,11 @@ const AddCompany = () => {
     locations: [
       {
         locationName: "",
-        payRate: 0,
+        payRate: "0",
       },
     ],
   });
+  console.log(formData);
 
   // Handle input changes for company name
   const handleCompanyInputChange = (event) => {
@@ -65,7 +66,7 @@ const AddCompany = () => {
       userId: session.user.id,
       locations: formData.locations.map((location) => ({
         ...location,
-        payRate: Number(location.payRate), // Ensure payRate is a number
+        payRate: location.payRate,
       })),
     };
 
@@ -79,6 +80,17 @@ const AddCompany = () => {
       });
 
       const result = await response.json();
+      if (response.ok) {
+        setFormData({
+          companyName: "",
+          locations: [
+            {
+              locationName: "",
+              payRate: "0",
+            },
+          ],
+        });
+      }
       console.log("Company created with ID:", result.id);
     } catch (error) {
       console.error("Error creating company:", error);
@@ -114,6 +126,7 @@ const AddCompany = () => {
             name="payRate"
             value={location.payRate}
             onChange={(e) => handleLocationInputChange(e, index)}
+            step="0.01"
           />
         </div>
       ))}

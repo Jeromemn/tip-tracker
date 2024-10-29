@@ -23,17 +23,19 @@ const EditLocation = ({
   selectedItem,
   showModal,
   onClose,
-  payRate,
   onConfirmUpdate,
 }) => {
   const [formData, setFormData] = useState({
-    location: selectedItem,
-    payRate: payRate,
+    location: selectedItem?.location || "",
+    payRate: selectedItem.payRate || 0,
   });
 
   useEffect(() => {
-    setFormData({ location: selectedItem, payRate });
-  }, [selectedItem, payRate]);
+    setFormData({
+      location: selectedItem.location,
+      payRate: selectedItem.payRate,
+    });
+  }, [selectedItem.location, selectedItem.payRate]);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -45,20 +47,25 @@ const EditLocation = ({
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!formData.location || formData.location.trim() === "") {
+      alert("Location name cannot be empty.");
+      console.log("Location name cannot be empty.");
+      return;
+    }
     onConfirmUpdate(formData);
   };
   return (
     <Modal $isopen={showModal}>
       <Wrapper>
         <ContentContainer onSubmit={handleSubmit}>
-          <h2>Edit {selectedItem}</h2>
+          <h2>Edit {formData.location}</h2>
           <label htmlFor="location">Location</label>
           <input
             type="text"
             id="location"
             name="location"
-            placeholder={selectedItem}
-            value={formData.location}
+            placeholder={selectedItem?.location}
+            value={formData.location || ""}
             onChange={handleInputChange}
           />
           <label htmlFor="payRate">Pay Rate</label>
@@ -66,8 +73,8 @@ const EditLocation = ({
             type="number"
             id="payRate"
             name="payRate"
-            value={formData.payRate}
-            placeholder={payRate}
+            value={formData.payRate || 0}
+            placeholder={selectedItem?.payRate}
             onChange={handleInputChange}
           />
           <ButtonContainer>

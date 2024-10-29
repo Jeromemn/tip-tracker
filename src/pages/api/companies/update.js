@@ -4,10 +4,6 @@ import { ObjectId } from "mongodb";
 export default async function handler(req, res) {
   if (req.method === "POST") {
     const { company, location, payRate, userId } = req.body;
-    console.log("companyId:", company);
-    console.log("location:", location);
-    console.log("payRate:", payRate);
-    console.log("user_id:", userId);
 
     if (!company || !location || !payRate) {
       return res.status(400).json({ error: "All fields are required." });
@@ -21,10 +17,8 @@ export default async function handler(req, res) {
       const client = await clientPromise;
       const db = client.db("IncomeApp");
       const collection = db.collection("companies");
-      console.log("Connecting to database...");
 
       if (!ObjectId.isValid(company.id)) {
-        console.log("Invalid companyId:", company.id);
         return res.status(400).json({ error: "Invalid company ID." });
       }
 

@@ -84,7 +84,6 @@ const Header = () => {
   const currentPath = router.pathname;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session } = useSession();
-  // console.log(session);
   const handleMobileMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
