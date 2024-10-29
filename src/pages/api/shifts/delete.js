@@ -8,13 +8,16 @@ export default async function handler(req, res) {
       const db = client.db("IncomeApp"); // Use your database name
       const collection = db.collection("shifts"); // Access shifts collection
 
-      const { shiftId } = req.body; // Expecting shiftId in the request body
+      const { shiftId, user_id } = req.body; // Expecting shiftId in the request body
 
       if (!shiftId) {
         return res.status(400).json({ error: "Shift ID is required" });
       }
 
-      const result = await collection.deleteOne({ _id: new ObjectId(shiftId) });
+      const result = await collection.deleteOne({
+        _id: new ObjectId(shiftId),
+        user_id: new ObjectId(user_id),
+      });
 
       if (result.deletedCount > 0) {
         res

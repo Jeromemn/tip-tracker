@@ -1,6 +1,5 @@
 import clientPromise from "@/lib/mongoDB";
 import { ObjectId } from "mongodb";
-import mockUser from "@/Utils/mockUser";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
@@ -10,29 +9,47 @@ export default async function handler(req, res) {
       const collection = db.collection("shifts");
 
       const {
+        user_id,
         companyId,
         companyName,
+        locationId,
         locationName,
+        date,
         clockIn,
         clockOut,
         hoursWorked,
         payRate,
-        totalHourlyPay,
+        totalBasePay,
+        totalHourlyRate,
         totalPay,
         tips,
       } = req.body;
 
+      if (
+        !user_id ||
+        !companyId ||
+        !locationId ||
+        !date ||
+        !clockIn ||
+        !clockOut
+      ) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
       // Create the shift object
       const newShift = {
-        user_id: new ObjectId(mockUser._id),
+        user_id: new ObjectId(user_id),
         companyId: new ObjectId(companyId), // Use the first company for now
         companyName,
+        locationId: new ObjectId(locationId), // Use the first location for now
         locationName,
-        clockIn: new Date(clockIn),
-        clockOut: new Date(clockOut),
+        date: new Date(date),
+        clockIn: new Date(`1970-01-01T${clockIn}:00`),
+        clockOut: new Date(`1970-01-01T${clockOut}:00`),
         hoursWorked: parseFloat(hoursWorked),
         payRate: parseFloat(payRate),
-        totalHourlyPay: parseFloat(totalHourlyPay),
+        totalBasePay: parseFloat(totalBasePay),
+        totalHourlyRate: parseFloat(totalHourlyRate),
         totalPay: parseFloat(totalPay),
         tips: parseFloat(tips),
         createdAt: new Date(), // Add a timestamp for when the shift was created
@@ -41,7 +58,11 @@ export default async function handler(req, res) {
       // Insert the new shift into the shifts collection
       const shiftResult = await collection.insertOne(newShift);
 
-      res.status(200).json({ shiftId: shiftResult.insertedId });
+      if (!shiftResult.acknowledged) {
+        throw new Error("Failed to insert shift");
+      }
+
+      res.status(201).json({ shiftId: shiftResult.insertedId });
     } catch (error) {
       console.error("Error creating shift:", error);
       res.status(500).json({ error: "Internal Server Error" });

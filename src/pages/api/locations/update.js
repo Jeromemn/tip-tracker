@@ -8,47 +8,43 @@ export default async function handler(req, res) {
       const db = client.db("IncomeApp");
       const collection = db.collection("companies");
 
-      const { companyId, oldLocation, newLocation, payRate } = req.body;
+      const {
+        companyId,
+        oldLocation,
+        newLocation,
+        payRate,
+        userId,
+        locationId,
+      } = req.body;
 
-      // Check if location name was changed
-      if (oldLocation !== newLocation) {
-        // Update both the location name and pay rate
-        const result = await collection.updateOne(
-          {
-            _id: new ObjectId(companyId),
-            "locations.locationName": oldLocation,
-          },
-          {
-            $set: {
-              "locations.$.locationName": newLocation, // Update location name
-              "locations.$.payRate": payRate, // Update pay rate
-            },
-          }
-        );
+      // Use the correct query to target a location in the array
+      const query = {
+        user_id: new ObjectId(userId),
+        _id: new ObjectId(companyId),
+        "locations.locationId": new ObjectId(locationId), // Use correct path to match location
+      };
 
-        if (result.modifiedCount > 0) {
-          res
-            .status(200)
-            .json({ success: true, message: "Location updated successfully" });
-        } else {
-          res.status(404).json({ error: "Location or company not found" });
-        }
+      const update = {
+        $set: {
+          ...(oldLocation !== newLocation && {
+            "locations.$.locationName": newLocation, // Update location name if it changed
+          }),
+          "locations.$.payRate": parseFloat(payRate), // Always update pay rate
+        },
+      };
+
+      const result = await collection.updateOne(query, update);
+
+      if (result.modifiedCount > 0) {
+        res.status(200).json({
+          success: true,
+          message:
+            oldLocation !== newLocation
+              ? "Location updated successfully"
+              : "Pay rate updated successfully",
+        });
       } else {
-        // Only update the pay rate
-        const result = await collection.updateOne(
-          {
-            _id: new ObjectId(companyId),
-            "locations.locationName": oldLocation,
-          },
-          { $set: { "locations.$.payRate": payRate } }
-        );
-        if (result.modifiedCount > 0) {
-          res
-            .status(200)
-            .json({ success: true, message: "Pay rate updated successfully" });
-        } else {
-          res.status(404).json({ error: "Location or company not found" });
-        }
+        res.status(404).json({ error: "Location or company not found" });
       }
     } catch (error) {
       console.error("Error handling location update:", error);

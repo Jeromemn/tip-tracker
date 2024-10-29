@@ -1,5 +1,7 @@
 import Wrapper from "../components/Wrapper";
 import AddLocation from "@/components/AddLocation";
+import AddCompany from "@/components/AddCompany";
+import AddShift from "@/components/AddShift";
 
 const formContents = [
   {
@@ -27,7 +29,10 @@ const formContents = [
 export default function Home() {
   return (
     <Wrapper>
-      <AddLocation></AddLocation>
+      {/* <AddShift /> */}
+      <AddCompany />
+
+      {/* <AddLocation></AddLocation> */}
     </Wrapper>
   );
 }

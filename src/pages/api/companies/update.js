@@ -3,34 +3,34 @@ import { ObjectId } from "mongodb";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const { company, location, payRate } = req.body;
-    console.log("companyId:", company);
-    console.log("location:", location);
-    console.log("payRate:", payRate);
+    const { company, location, payRate, userId } = req.body;
 
     if (!company || !location || !payRate) {
       return res.status(400).json({ error: "All fields are required." });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     try {
       const client = await clientPromise;
       const db = client.db("IncomeApp");
       const collection = db.collection("companies");
-      console.log("Connecting to database...");
 
       if (!ObjectId.isValid(company.id)) {
-        console.log("Invalid companyId:", company.id);
         return res.status(400).json({ error: "Invalid company ID." });
       }
 
       // Update the company by pushing the new location to the locations array
       const result = await collection.updateOne(
-        { _id: new ObjectId(company.id) },
+        { user_id: new ObjectId(userId), _id: new ObjectId(company.id) },
         {
           $push: {
             locations: {
               locationName: location,
               payRate: Number(payRate), // Ensure payRate is a number
+              locationId: new ObjectId(),
             },
           },
         }

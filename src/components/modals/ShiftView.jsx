@@ -6,6 +6,7 @@ import Button from "../Button";
 import PayInput from "../PayInput";
 import Close from "@/icons/Close";
 import DeleteModal from "./DeleteModal";
+import { formatTimeForInput, formatDateForDisplay } from "@/Utils/helpers";
 
 const ContentContainer = styled.form`
   display: flex;
@@ -75,45 +76,36 @@ const CloseButton = styled.button`
   outline: none;
 `;
 
-const formatTimeForInput = (dateString) => {
-  const date = new Date(dateString);
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`; // e.g., "14:30"
-};
-
-const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
+const ShiftView = ({
+  onClose,
+  selectedShift,
+  showShift,
+  onDelete,
+  onUpdate,
+  user,
+}) => {
   const [editShift, setEditShift] = useState(false);
   const [deleteShift, setDeleteShift] = useState(false);
-  const [selectedItem, setSelectedItem] = useState("");
   const [shiftId, setShiftId] = useState("");
 
   const [shiftData, setShiftData] = useState({
     clockIn: formatTimeForInput(selectedShift.clockIn) || "",
     clockOut: formatTimeForInput(selectedShift.clockOut) || "",
-    hoursWorked: selectedShift.hoursWorked || 0,
-    payRate: selectedShift.payRate || 0,
-    tips: selectedShift.tips || 0,
-    totalHourlyPay: selectedShift.totalHourlyPay || 0,
-    totalPay: selectedShift.totalPay || 0,
   });
 
   useEffect(() => {
     // Ensure the shiftData reflects the selectedShift when the component mounts
     setShiftData({
+      ...selectedShift,
+      date: formatDateForDisplay(selectedShift.date),
       clockIn: formatTimeForInput(selectedShift.clockIn) || "",
       clockOut: formatTimeForInput(selectedShift.clockOut) || "",
-      hoursWorked: selectedShift.hoursWorked || 0,
-      payRate: selectedShift.payRate || 0,
-      tips: selectedShift.tips || 0,
-      totalHourlyPay: selectedShift.totalHourlyPay || 0,
-      totalPay: selectedShift.totalPay || 0,
     });
   }, [selectedShift]);
 
   const calculateHoursAndPay = () => {
-    const [inHours, inMinutes] = shiftData.clockIn.split(":").map(Number);
-    const [outHours, outMinutes] = shiftData.clockOut.split(":").map(Number);
+    const [inHours, inMinutes] = shiftData?.clockIn.split(":").map(Number);
+    const [outHours, outMinutes] = shiftData?.clockOut.split(":").map(Number);
 
     let clockInDate = new Date(1970, 0, 1, inHours, inMinutes);
     let clockOutDate = new Date(1970, 0, 1, outHours, outMinutes);
@@ -123,22 +115,22 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
     }
 
     const hoursWorked = (clockOutDate - clockInDate) / (1000 * 60 * 60);
-    const totalHourlyPay = hoursWorked * shiftData.payRate;
-    const totalPay = totalHourlyPay + parseFloat(shiftData.tips);
+    const totalBasePay = hoursWorked * shiftData.payRate;
+    const totalPay = totalBasePay + parseFloat(shiftData.tips);
 
     return {
       hoursWorked: hoursWorked.toFixed(2),
-      totalHourlyPay: totalHourlyPay.toFixed(2),
+      totalBasePay: totalBasePay.toFixed(2),
       totalPay: totalPay.toFixed(2),
     };
   };
 
   useEffect(() => {
-    const { hoursWorked, totalHourlyPay, totalPay } = calculateHoursAndPay();
+    const { hoursWorked, totalBasePay, totalPay } = calculateHoursAndPay();
     setShiftData((prevData) => ({
       ...prevData,
       hoursWorked,
-      totalHourlyPay,
+      totalBasePay,
       totalPay,
     }));
   }, [
@@ -147,20 +139,6 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
     shiftData.payRate,
     shiftData.tips,
   ]);
-
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
-  // const formatTime = (dateString) => {
-  //   const options = { hour: "numeric", minute: "numeric", hour12: true };
-  //   return new Date(dateString).toLocaleTimeString(undefined, options);
-  // };
-
-  const handleEdit = () => {
-    setEditShift(true);
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -182,7 +160,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ shiftId }),
+        body: JSON.stringify({ shiftId, user_id: user.id }),
       });
 
       const data = await response.json();
@@ -202,14 +180,52 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
 
   const handleDelete = () => {
     setDeleteShift(true);
-    setSelectedItem("Shift");
     setShiftId(selectedShift._id);
-    console.log(selectedShift._id);
-    console.log("selected item", selectedShift);
   };
 
   const handleCloseDelete = () => {
     setDeleteShift(false);
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const { _id, ...updatedShiftData } = shiftData;
+
+      const formattedShiftData = {
+        ...updatedShiftData,
+        locationName: selectedShift.locationName,
+        date: new Date(shiftData.date),
+        clockIn: `1970-01-01T${shiftData.clockIn}:00`, // Convert time to ISO format
+        clockOut: `1970-01-01T${shiftData.clockOut}:00`, // Same for clock out
+        hoursWorked: parseFloat(shiftData.hoursWorked), // Ensure hoursWorked is a number
+        payRate: parseFloat(shiftData.payRate),
+        totalBasePay: parseFloat(shiftData.totalBasePay),
+        tips: parseFloat(shiftData.tips),
+        totalHourlyRate: parseFloat(shiftData.totalHourlyRate),
+        totalPay: parseFloat(shiftData.totalPay),
+      };
+
+      const response = await fetch("/api/shifts/update", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          shiftId: _id,
+          user_id: user.id,
+          ...formattedShiftData,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedShift = await response.json();
+        onUpdate({ formattedShiftData, shiftId: selectedShift._id });
+      } else {
+        console.error("Error updating shift:", await response.json());
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   return (
@@ -217,7 +233,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
       <Wrapper>
         {deleteShift ? (
           <DeleteModal
-            selectedItem={selectedItem}
+            selectedItem="Shift"
             showModal={deleteShift}
             onClose={handleCloseDelete}
             onConfirmDelete={handleConfirmDelete}
@@ -225,9 +241,9 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
         ) : (
           <ContentContainer>
             <CloseButton type="button" onClick={handleClose}>
-              <Close />
+              <Close color="black" />
             </CloseButton>
-            <h2> {formatDate(selectedShift?.clockIn)} </h2>
+            <h2> {shiftData?.date} </h2>
             <LocationSection>
               <Text>Location:</Text>
               <Text>{selectedShift.locationName}</Text>
@@ -239,7 +255,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
                   type="time"
                   name="clockIn"
                   readOnly={!editShift}
-                  value={shiftData.clockIn}
+                  value={shiftData.clockIn || ""}
                   onChange={handleInputChange}
                 ></input>
               </div>
@@ -249,7 +265,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
                   type="time"
                   name="clockOut"
                   readOnly={!editShift}
-                  value={shiftData.clockOut}
+                  value={shiftData.clockOut || ""}
                   onChange={handleInputChange}
                 ></input>
               </div>
@@ -263,11 +279,11 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
                   type="number"
                   name="payRate"
                   readOnly={!editShift}
-                  value={shiftData.payRate}
+                  value={shiftData.payRate || 0}
                   onChange={handleInputChange}
                 ></PayInput>
               </PayRateWrapper>
-              <Text> Total Base Pay: ${shiftData.totalHourlyPay} </Text>
+              <Text> Total Base Pay: ${shiftData.totalBasePay} </Text>
             </BasePaySection>
             <TotalPaySection>
               <TipsContainer>
@@ -275,7 +291,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
                 <PayInput
                   type="number"
                   name="tips"
-                  value={shiftData.tips}
+                  value={shiftData.tips || 0}
                   readOnly={!editShift}
                   onChange={handleInputChange}
                 ></PayInput>
@@ -291,7 +307,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
                 <Button type="button" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button type="button" onClick={handleEdit}>
+                <Button type="button" onClick={handleUpdate}>
                   Save
                 </Button>
               </ButtonContainer>
@@ -300,7 +316,7 @@ const ShiftView = ({ onClose, selectedShift, showShift, onDelete }) => {
                 <Button variant="warning" type="button" onClick={handleDelete}>
                   Delete
                 </Button>
-                <Button type="button" onClick={handleEdit}>
+                <Button type="button" onClick={() => setEditShift(true)}>
                   Edit
                 </Button>
               </ButtonContainer>
