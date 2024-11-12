@@ -11,7 +11,7 @@ const PrimaryButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
 `;
 
 const SecondaryButton = styled.button`
@@ -34,6 +34,7 @@ const WarningButton = styled.button`
   border-radius: 4px;
   border: none;
   font-size: 18px;
+  cursor: pointer;
 `;
 
 const IconButton = styled.button`
@@ -43,6 +44,7 @@ const IconButton = styled.button`
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 8px;
 `;
 
 const variants = {
@@ -52,9 +54,18 @@ const variants = {
   warning: WarningButton,
 };
 
-const Button = ({ variant = "primary", children, ...rest }) => {
+const Button = ({
+  variant = "primary",
+  disabled = false,
+  children,
+  ...rest
+}) => {
   const ButtonComponent = variants[variant] || PrimaryButton;
-  return <ButtonComponent {...rest}>{children}</ButtonComponent>;
+  return (
+    <ButtonComponent disabled={disabled} {...rest}>
+      {children}
+    </ButtonComponent>
+  );
 };
 
 export default Button;

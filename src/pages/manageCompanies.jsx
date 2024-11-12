@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Wrapper from "../components/Wrapper";
 import Button from "../components/Button";
-import { DeleteIcon } from "@/icons";
+import { DeleteIcon, Plus } from "@/icons";
 import DeleteModal from "../components/modals/DeleteModal";
 import EditLocation from "@/components/modals/EditLocation";
+import AddLocationModal from "@/components/modals/AddLocationModal";
 import { useSession } from "next-auth/react";
 
 const ManageContainer = styled.div`
@@ -70,6 +71,10 @@ const ManagerCompanies = () => {
   const [companies, setCompanies] = useState([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState({
+    showModal: false,
+    company: "",
+  });
   const [selectedItem, setSelectedItem] = useState({
     location: "",
     locationId: "",
@@ -209,6 +214,27 @@ const ManagerCompanies = () => {
     setSelectedItem("");
   };
 
+  const handleAddLocation = (company) => {
+    setAddOpen({
+      showModal: true,
+      company: company,
+    });
+  };
+
+  const handleCloseAddLocation = () => {
+    setAddOpen({ showModal: false, company: "" });
+  };
+
+  const handleLocationAdded = (result, companyId) => {
+    const updatedCompanies = companies.map((company) =>
+      company._id === companyId
+        ? { ...company, locations: result.result.locations }
+        : company
+    );
+    setCompanies(updatedCompanies);
+    handleCloseAddLocation();
+  };
+
   return (
     <Wrapper>
       <DeleteModal
@@ -223,6 +249,14 @@ const ManagerCompanies = () => {
         onClose={handleCloseEdit}
         onConfirmUpdate={handleConfirmUpdate}
       />
+      <AddLocationModal
+        showModal={addOpen.showModal}
+        onClose={handleCloseAddLocation}
+        company={addOpen.company}
+        onLocationAdded={(result, companyId) =>
+          handleLocationAdded(result, companyId)
+        }
+      />
       <ManageContainer>
         <h1>Manage Companies</h1>
         <AllCompanies>
@@ -232,6 +266,13 @@ const ManagerCompanies = () => {
               <TableHeader>
                 <h3>Location</h3>
                 <h3>Pay Rate</h3>
+                <Button
+                  variant="icon"
+                  onClick={() => handleAddLocation(company)}
+                >
+                  Location
+                  <Plus />
+                </Button>
               </TableHeader>
               {company.locations.map((location) => (
                 <LocationWrapper key={location.locationName}>
