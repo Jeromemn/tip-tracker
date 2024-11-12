@@ -3,9 +3,9 @@ import { ObjectId } from "mongodb";
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const { company, location, payRate, userId } = req.body;
+    const { companyId, location, payRate, userId } = req.body;
 
-    if (!company || !location || !payRate) {
+    if (!companyId || !location || !payRate) {
       return res.status(400).json({ error: "All fields are required." });
     }
 
@@ -18,29 +18,28 @@ export default async function handler(req, res) {
       const db = client.db("IncomeApp");
       const collection = db.collection("companies");
 
-      if (!ObjectId.isValid(company.id)) {
+      if (!ObjectId.isValid(companyId)) {
         return res.status(400).json({ error: "Invalid company ID." });
       }
 
+      const newLocation = {
+        locationName: location,
+        payRate: parseFloat(payRate),
+        locationId: new ObjectId(),
+      };
+
       // Update the company by pushing the new location to the locations array
-      const result = await collection.updateOne(
-        { user_id: new ObjectId(userId), _id: new ObjectId(company.id) },
+      const result = await collection.findOneAndUpdate(
+        { user_id: new ObjectId(userId), _id: new ObjectId(companyId) },
         {
           $push: {
-            locations: {
-              locationName: location,
-              payRate: Number(payRate), // Ensure payRate is a number
-              locationId: new ObjectId(),
-            },
+            locations: newLocation,
           },
-        }
+        },
+        { returnDocument: "after" }
       );
 
-      if (result.modifiedCount > 0) {
-        res.status(200).json({ message: "Location added successfully." });
-      } else {
-        res.status(404).json({ error: "Company not found." });
-      }
+      res.status(200).json({ message: "Location added successfully.", result });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to add location." });
