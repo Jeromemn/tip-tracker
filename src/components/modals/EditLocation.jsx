@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Modal from "./Modal";
 import Wrapper from "../Wrapper";
 import Button from "../Button";
+import { Close } from "@/icons";
 
 const ContentContainer = styled.form`
   display: flex;
@@ -11,12 +12,19 @@ const ContentContainer = styled.form`
   padding: 16px 16px;
   gap: 16px;
   border-radius: 4px;
+  position: relative;
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 16px;
+`;
+const CloseButton = styled(Button)`
+  align-self: flex-end;
+  position: absolute;
+  top: 10px;
+  right: 10px;
 `;
 
 const EditLocation = ({
@@ -27,7 +35,7 @@ const EditLocation = ({
 }) => {
   const [formData, setFormData] = useState({
     location: selectedItem?.location || "",
-    payRate: selectedItem.payRate || 0,
+    payRate: selectedItem.payRate || "",
   });
 
   useEffect(() => {
@@ -54,10 +62,22 @@ const EditLocation = ({
     }
     onConfirmUpdate(formData);
   };
+
+  const handleCancel = () => {
+    setFormData({
+      locationName: "",
+      payRate: "",
+    });
+    onClose();
+  };
+
   return (
     <Modal $isopen={showModal}>
       <Wrapper>
         <ContentContainer onSubmit={handleSubmit}>
+          <CloseButton variant="icon" type="button" onClick={handleCancel}>
+            <Close color="black" />
+          </CloseButton>
           <h2>Edit {formData.location}</h2>
           <label htmlFor="location">Location</label>
           <input
@@ -73,14 +93,22 @@ const EditLocation = ({
             type="number"
             id="payRate"
             name="payRate"
-            value={formData.payRate || 0}
+            value={formData.payRate || ""}
             placeholder={selectedItem?.payRate}
             onChange={handleInputChange}
           />
           <ButtonContainer>
-            <Button type="submit">Save</Button>
             <Button type="button" onClick={onClose}>
               Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                formData.location === selectedItem.location &&
+                formData.payRate === selectedItem.payRate
+              }
+            >
+              Save
             </Button>
           </ButtonContainer>
         </ContentContainer>

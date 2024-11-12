@@ -17,13 +17,6 @@ const FormWrapper = styled.form`
   position: relative;
 `;
 
-const FormContents = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  /* padding: 0 24px 24px 24px; */
-`;
-
 const ButtonWrapper = styled.div`
   display: flex;
   justify-content: end;
@@ -108,7 +101,7 @@ const AddLocationModal = ({ showModal, company, onClose, onLocationAdded }) => {
     <Modal $isopen={showModal}>
       <Wrapper>
         <FormWrapper onSubmit={handleSubmit} id="SubmitForm">
-          <CloseButton variant="icon" onClick={handleCancel}>
+          <CloseButton type="button" variant="icon" onClick={handleCancel}>
             <Close color="black" />
           </CloseButton>
           <h2>{company?.name} new location </h2>
